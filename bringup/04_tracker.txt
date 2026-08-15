@@ -1,0 +1,70 @@
+// STAGE 4 - pass detection and minimum-hold (plan Task 4, Steps 4-5)
+//
+// This is the most important stage. The minimum-hold is the behavior the
+// whole device exists for, and it is much easier to trust after watching
+// it catch a book swept past by hand.
+//
+// Verify band boundaries (D_ref = 8.0, so edges are at 20/16/12/9.5 in):
+//   24in -> SAFE    leds=5
+//   18in -> OK      leds=4
+//   14in -> CAUTION leds=3
+//   10in -> WARN    leds=2
+//    8in -> DANGER  leds=1
+//   across the room -> "-"  leds=0
+//
+// Verify minimum-hold:
+//   Start with nothing in range. Sweep the book past in ONE smooth motion,
+//   dipping to about 6in at the closest point, then take it fully away.
+//   - min= should settle near 6 and STAY there while cur= climbs back up
+//   - [pass] should disappear ~3s after the book leaves
+//   - min= should revert to -- about 30s after that
+
+#include "config.h"
+#include "Ranger.h"
+#include "Thermo.h"
+#include "Tracker.h"
+
+Ranger  ranger;
+Thermo  thermo;
+Tracker tracker;
+uint32_t lastPrint = 0;
+
+static const char* bandName(Band b) {
+  switch (b) {
+    case BAND_SAFE:    return "SAFE";
+    case BAND_OK:      return "OK";
+    case BAND_CAUTION: return "CAUTION";
+    case BAND_WARN:    return "WARN";
+    case BAND_DANGER:  return "DANGER";
+    default:           return "-";
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  ranger.begin();
+  thermo.begin();
+  tracker.begin(DEFAULT_D_REF_INCHES);
+  Serial.println("STAGE 4 - tracker (D_ref = 8.0 in)");
+}
+
+void loop() {
+  thermo.update();
+  if (ranger.update(thermo.inchesPerMicrosecond())) {
+    tracker.update(ranger.hasTarget(), ranger.inches());
+  }
+
+  if (millis() - lastPrint >= 250) {
+    lastPrint = millis();
+    Serial.print(bandName(tracker.band()));
+    Serial.print(" leds=");
+    Serial.print(tracker.ledCount());
+    Serial.print(" cur=");
+    Serial.print(tracker.currentInches(), 1);
+    Serial.print(" min=");
+    if (tracker.hasMin()) Serial.print(tracker.minInches(), 1);
+    else                  Serial.print("--");
+    Serial.print(tracker.passActive() ? " [pass]" : "");
+    Serial.println();
+  }
+}

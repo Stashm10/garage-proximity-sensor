@@ -1,0 +1,35 @@
+// STAGE 2 - rolling median filter (plan Task 2, Step 4)
+//
+// Verify: hold a book FIXED at 12in - clamp it or lean it, it must not
+// move. Watch for 20 seconds.
+//   - the spread between highest and lowest value should be SMALLER than
+//     it was in Stage 1 at the same distance
+//   - there should be no isolated wild values (a lone 3.1 among 12.x)
+//
+// Then open Tools > Serial Plotter (also 115200) and wave the book slowly
+// toward and away: expect a smooth trace with no visible lag.
+
+#include "config.h"
+#include "Ranger.h"
+
+Ranger ranger;
+uint32_t lastPrint = 0;
+
+void setup() {
+  Serial.begin(115200);
+  ranger.begin();
+  Serial.println("STAGE 2 - filtered ranger");
+}
+
+void loop() {
+  ranger.update(0.0135205f);   // fixed 20C constant until Stage 3
+
+  if (millis() - lastPrint >= 200) {
+    lastPrint = millis();
+    if (ranger.hasTarget()) {
+      Serial.println(ranger.inches(), 2);
+    } else {
+      Serial.println("no target");
+    }
+  }
+}

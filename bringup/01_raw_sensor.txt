@@ -1,0 +1,39 @@
+// STAGE 1 - raw HC-SR04 reading (plan Task 1, Step 4)
+//
+// Verify: hold a book flat and face-on at 4, 8, 12, 24 and 36 inches.
+// Each printed value should be within +/-0.5in of a tape measure.
+// Jitter of a few tenths is expected - that is what Stage 2 removes.
+//
+// Point at open air: should print "no target" at the same ~200ms cadence.
+// If "no target" lines are visibly slower, the echo timeout is not applying.
+
+#include "config.h"
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(PIN_TRIG, OUTPUT);
+  pinMode(PIN_ECHO, INPUT);
+  digitalWrite(PIN_TRIG, LOW);
+  Serial.println("STAGE 1 - raw ranger");
+}
+
+void loop() {
+  digitalWrite(PIN_TRIG, LOW);
+  delayMicroseconds(3);
+  digitalWrite(PIN_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(PIN_TRIG, LOW);
+
+  unsigned long dur = pulseIn(PIN_ECHO, HIGH, ECHO_TIMEOUT_US);
+
+  if (dur == 0) {
+    Serial.println("no target");
+  } else {
+    float inches = (dur * 0.0135205f) / 2.0f;   // fixed 20C constant
+    Serial.print(dur);
+    Serial.print(" us  ");
+    Serial.print(inches, 2);
+    Serial.println(" in");
+  }
+  delay(200);
+}

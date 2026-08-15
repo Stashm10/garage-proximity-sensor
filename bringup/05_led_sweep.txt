@@ -1,0 +1,35 @@
+// STAGE 5 - LED bar sweep (plan Task 5, Step 4)
+//
+// Verify: the bar fills from the BOTTOM (red first), one LED at a time,
+// up to all five, then repeats.
+//
+// If it fills from the top, Q0 and Q4 are swapped - recheck the LED table.
+// If nothing lights at all:
+//   - 74HC595 chip pin 16 (VCC) must be on 3.3V, NOT 5V
+//   - 74HC595 chip pin 13 (OE) must be on GROUND
+//   - 74HC595 chip pin 10 (MR) must be on 3.3V
+// Note the chip's OE is chip-pin 13 while the clock is GPIO 13. Unrelated.
+//
+// Green LEDs may be dimmer than red and yellow - their forward voltage can
+// be close to the 3.3V supply. Expected. If a green is unusably dim, just
+// substitute a yellow; do not go below 100 ohm, which is already the
+// brightest value the 74HC595 package current allows for five LEDs.
+
+#include "config.h"
+#include "Presenter.h"
+
+Presenter presenter;
+
+void setup() {
+  Serial.begin(115200);
+  presenter.begin();
+  Serial.println("STAGE 5 - LED bar sweep");
+}
+
+void loop() {
+  for (int n = 0; n <= 5; n++) {
+    presenter.setBar(n, true);
+    Serial.println(n);
+    delay(400);
+  }
+}
