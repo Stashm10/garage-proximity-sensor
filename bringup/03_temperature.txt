@@ -1,0 +1,47 @@
+// STAGE 3 - temperature compensation (plan Task 3, Step 5)
+//
+// Verify, in order:
+//   1. Within 5s the line reads "(live)" at a plausible room temperature
+//      (roughly 18-26C indoors).
+//   2. Cup your hands around the DHT11 and breathe on it for 15s. The
+//      temperature climbs, and the distance to a FIXED target rises very
+//      slightly - about 0.1in per 10C at 24in. That small shift, in the
+//      correct direction, is the whole feature.
+//   3. Power off, disconnect the DHT11 DATA wire, power on. Expect
+//      "(fallback)" at 20.0C with ranging still working. A dead
+//      temperature sensor must never stop distance measurement.
+//
+// Reconnect the data wire before moving on.
+
+#include "config.h"
+#include "Ranger.h"
+#include "Thermo.h"
+
+Ranger ranger;
+Thermo thermo;
+uint32_t lastPrint = 0;
+
+void setup() {
+  Serial.begin(115200);
+  ranger.begin();
+  thermo.begin();
+  Serial.println("STAGE 3 - temperature-compensated ranger");
+}
+
+void loop() {
+  thermo.update();
+  ranger.update(thermo.inchesPerMicrosecond());
+
+  if (millis() - lastPrint >= 500) {
+    lastPrint = millis();
+    Serial.print(thermo.temperatureC(), 1);
+    Serial.print("C ");
+    Serial.print(thermo.hasReading() ? "(live) " : "(fallback) ");
+    if (ranger.hasTarget()) {
+      Serial.print(ranger.inches(), 2);
+      Serial.println(" in");
+    } else {
+      Serial.println("no target");
+    }
+  }
+}
