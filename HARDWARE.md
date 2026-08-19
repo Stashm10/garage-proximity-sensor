@@ -217,6 +217,17 @@ are joined in pairs across the gap, so straddle the breadboard trench.
 
 ## Pin map summary
 
+**Board confirmed: ESP32 DevKit V1, 30-pin, USB-C.** Its silkscreen prints serial
+names for two of the pins this project uses — there is no pin labelled "16" or "17":
+
+| Code / GPIO | Printed on your board |
+|---|---|
+| GPIO 16 (HC-SR04 ECHO) | **RX2** |
+| GPIO 17 (HC-SR04 TRIG) | **TX2** |
+
+Every other pin is labelled with its number (`D4`, `D13`, `D21`, `D22`, `D25`, `D26`,
+`D27`, `D33`). `VIN` and `3V3` are both at the USB-C end, on opposite rows.
+
 | GPIO | Function |
 |---|---|
 | 4 | DHT11 data |
