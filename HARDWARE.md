@@ -26,12 +26,39 @@ Bench reference. Full step-by-step build order with verification gates is in
 | Jumper wires | ~30 | |
 | USB A-to-C cable | 1 | Programming, then power |
 
-### Not in the kit — you must supply
+### Powering it — kit-only options
 
-**A USB power bank.** Any phone bank works. This is the only thing you need to buy.
+Every part of the **circuit** comes from the kit. Power is the one open question,
+and there are three ways to solve it.
 
-Do not use the kit's 9 V battery: the DevKit's linear regulator burns most of it
-as heat and you would get roughly 5 hours.
+**Option 1 — USB power bank (recommended).** Any phone power bank, plugged in with
+the kit's USB A-to-C cable. Most people already own one, so for most people this is
+not a purchase. ~60 hours of run time from a 10,000 mAh bank; at two minutes per
+park that is a few recharges a year. Nothing to build, nothing to get wrong.
+
+**Option 2 — 9 V battery + Power Supply Module (fully kit-only).** Both are in the
+kit. The 9 V feeds the Power Supply Module, which regulates it down to clean 5 V and
+3.3 V rails; the 5 V then feeds both the ESP32's VIN pin and the HC-SR04.
+
+Check what your 9 V snap connector ends in first:
+- **A barrel plug** — plugs straight into the Power Supply Module. This works.
+- **Bare wires** — only works if your module has a screw terminal. Otherwise use
+  Option 1.
+
+Run time is roughly **4–5 hours** of on-time from an alkaline 9 V (about 500 mAh
+against a ~105 mA draw). At two minutes per park that is ~135 sessions, so a couple
+of months of twice-daily parking before the battery needs replacing. The module's
+regulator also runs warm, which is normal.
+
+**Option 3 — do NOT do this: 9 V straight to VIN.** This is the obvious-looking
+approach and it will damage your ultrasonic sensor. On the DevKit, the VIN pin is
+the *same electrical node* as the USB 5 V rail — it feeds the onboard regulator, it
+is not produced by it. Put 9 V in and the VIN pin sits at 9 V. The ESP32 itself
+survives (its regulator accepts up to 15 V), but anything you tap off VIN gets 9 V,
+and the HC-SR04 is a 5 V part with an absolute maximum around 5.5 V.
+
+If you want to start building before sorting out power, just run it off your Mac's
+USB port. Tasks 0 through 9 are all bench work at your desk anyway.
 
 ### Note on jumper wires
 
@@ -45,8 +72,11 @@ only ships 10 F-M wires.
 GY-6500 gyro, ULN2003 + stepper, SG90 servo, 5 V relay, IR receiver + emitter +
 remote, joystick, fan blade + motor, **active** buzzer, L293D, RC522 RFID, membrane
 keypad, HC-SR501 PIR, 4 spare buttons, potentiometer, both 7-segment displays, tilt
-ball switch, white/blue/RGB LEDs, thermistor, photoresistors, diodes, 9 V battery,
-1 spare PN2222, the breadboard power supply module, and most resistor values.
+ball switch, white/blue/RGB LEDs, thermistor, photoresistors, diodes, 1 spare
+PN2222, and most resistor values.
+
+The **9 V battery** and the **Power Supply Module** are unused if you power from a
+USB power bank (Option 1), and used together if you go fully kit-only (Option 2).
 
 Two of these were considered and deliberately rejected:
 
@@ -62,11 +92,18 @@ mistake that can destroy parts.
 
 | Rail | Source | Feeds |
 |---|---|---|
-| **5 V** | ESP32 `VIN` pin | HC-SR04 **only** |
+| **5 V** | see below | HC-SR04 **only** |
 | **3.3 V** | ESP32 `3V3` pin | OLED, DHT11, 74HC595, buzzer, everything else |
 | **GND** | ESP32 `GND` | Everything (all grounds common) |
 
-`VIN` carries ~5 V whenever the board is USB-powered.
+Where the 5 V rail comes from depends on how you power the device:
+
+- **USB power bank or Mac USB (Option 1)** — take it from the ESP32's `VIN` pin,
+  which carries ~5 V whenever the board is USB-powered.
+- **9 V + Power Supply Module (Option 2)** — take it from the module's 5 V output,
+  and feed the ESP32's `VIN` from that same 5 V.
+
+Either way the HC-SR04 sees a regulated 5 V and never sees 9 V.
 
 **The 74HC595 must be on 3.3 V, never 5 V.** A 74HC part running at 5 V needs 3.5 V
 to register a logic HIGH, and the ESP32 only outputs 3.3 V — it would work
@@ -207,3 +244,57 @@ and is a common wrong answer for TRIG.
 - [ ] All LED long legs face the 595, short legs face the resistors
 
 Always disconnect USB power before changing wiring.
+
+## How big is it?
+
+Short answer: **about a phone's footprint, but roughly four times as thick.**
+
+### Footprint
+
+A 400-point breadboard is **83 × 55 mm**. You need two, and placed end to end they
+come to **166 × 55 mm**.
+
+| | Length | Width | Thickness |
+|---|---|---|---|
+| Two breadboards, end to end | 166 mm | 55 mm | 10 mm (bare) |
+| iPhone 16 Pro Max | 163 mm | 77.6 mm | 8.25 mm |
+
+So the outline is close — very slightly longer than the phone and about 20 mm
+narrower.
+
+### Thickness is where it differs
+
+The breadboard is 10 mm on its own, and everything stands on top of it. The
+ultrasonic sensor's two barrels are the tallest parts at about 15 mm. With an
+enclosure around it you land near **30–35 mm thick**, against the phone's 8.25 mm.
+
+Think "a phone-sized brick about as thick as four phones stacked."
+
+Add a USB power bank and it grows again — a 10,000 mAh bank is roughly
+140 × 70 × 15 mm on its own, so the finished object is more like two phones face to
+face. The 9 V option (see Powering it, above) is physically smaller: a 9 V battery
+is 48 × 26 × 17 mm.
+
+### Can it be done without a breadboard?
+
+Not with what is in the kit. Going breadboard-free means **soldering** the parts to
+a piece of perfboard, and that needs three things the kit does not include:
+
+- perfboard / protoboard
+- a soldering iron
+- solder
+
+It is also a real skill with a real learning curve, and a cold solder joint produces
+exactly the kind of intermittent fault that is miserable to diagnose.
+
+**Build it on the breadboards first regardless.** The staged testing in the plan
+depends on being able to change wiring between tasks, which soldered work does not
+allow. Once it is working and calibrated and you have lived with it for a few weeks,
+you will know whether it is worth soldering a permanent version — and by then you
+will also know the circuit well enough to do it confidently.
+
+If size turns out to matter more than you expect, the OLED is the easiest thing to
+drop: it exists for setup and calibration, and is unreadable from the driver's seat
+anyway. The LED bar is the actual driving interface. Removing it would save the
+27 × 27 mm module and free four connections, at the cost of having to calibrate
+against serial output instead of a screen.
