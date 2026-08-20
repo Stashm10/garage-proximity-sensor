@@ -85,6 +85,29 @@ Two of these were considered and deliberately rejected:
 - **HC-SR501 PIR** — could wake the device on motion, but it would also trigger on
   you walking through the garage. Unplugging is simpler and more predictable.
 
+## The ESP32 does NOT go on the breadboard
+
+**This board has 1.0 inch pin-row spacing.** A breadboard's lettered area spans 1.1
+inches, so there is only one row of slack — you can have a free row on the `a` side or
+the `j` side, never both. Whichever side loses out has no reachable hole in any of its
+pins' groups, and those pins become unusable. No seating position fixes this.
+
+So the ESP32 **sits loose beside the breadboard** and connects with **female-to-male
+jumper wires**: the socket end pushes onto the ESP32's pin, the male end goes into a
+breadboard hole.
+
+This applies to every wiring table below. Where a table says "GPIO 17", read it as
+"a female-to-male wire from the pin marked `TX2`, with its male end in the breadboard
+hole you are using for that signal."
+
+Consequences:
+
+- No wire ever runs directly between two components. Everything meets in the breadboard.
+- The full build needs ~13 connections to the ESP32. The kit ships 10 female-to-male
+  wires and 4 are used by the sensor, so **a 40-pack of male-to-female jumper wires is
+  needed** to finish. A few dollars.
+- Every breadboard hole stays visible, since nothing overhangs the grid.
+
 ## Power rails
 
 The board needs **two separate rails**. Getting these crossed is the one wiring
