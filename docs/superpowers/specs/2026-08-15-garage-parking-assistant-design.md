@@ -16,26 +16,38 @@ the clearance that actually matters.
 
 ## Goal
 
-A battery-powered, non-permanent device that hangs on the garage entrance wall at the
-point the car first passes, measures lateral clearance between the car's flank and the
-wall, and signals the driver via a visible LED bar and audible beeping before contact.
+A portable device that **rides in the car**, resting on the driver's door sill with the
+window lowered, measuring lateral clearance between the car's left flank and whatever is
+beside it, and warning the driver via an LED bar, an OLED readout, and rising-rate
+beeping before contact.
 
-Portable: it must run from a USB power bank and mount with Command strips or a picture
-hanger, so it can be moved or taken to other locations.
+Powered from the car's USB port. Works anywhere the car goes, not only in the garage.
+
+> **Revised 2026-08-19.** The original design mounted the device on the garage entrance
+> wall. Car-mounting replaced it: the OLED and buzzer only work at cabin range, the
+> calibration becomes permanent because the sensor is fixed relative to the car, and the
+> device travels. The cost is that the window must be down (ultrasonic cannot pass
+> through glass) and the front corner is not directly covered. See Mounting.
 
 ## Non-goals
 
 - Frontal stop distance (the factory sensors already cover this adequately).
-- Permanent installation or mains wiring.
+- Permanent installation, mains wiring, or anything spliced into the car's electrics.
 - Sub-quarter-inch accuracy. See "Accuracy budget" below.
 - Any network connectivity in v1.
 
 ## Core design decision: profile, not point
 
-A side-mounted sensor does not observe a static distance. The car moves past it, and the
-sensor sees a sequence: empty air → front bumper corner → fender → front wheel → **mirror**
-→ door → rear quarter. Lateral offset differs at each. The mirror typically protrudes
-furthest and passes the sensor in a fraction of a second.
+A side-facing sensor does not observe a static distance — the car and the obstacle move
+relative to one another, and the gap traces a profile over the few seconds of the pass.
+
+Under the revised car-mounted geometry the sensor rides with the car and sweeps past the
+wall, reading the narrowest point of the gap as it goes. Under the original wall-mounted
+geometry the car swept past a fixed sensor, which saw: empty air → front bumper corner →
+fender → wheel → **mirror** → door → rear quarter.
+
+Either way the physics and the required logic are identical: relative motion, a profile
+rather than a point, and a narrowest moment that may last a fraction of a second.
 
 Therefore the device tracks **minimum clearance observed during the current pass**, in
 addition to live distance. Live distance tells the driver how to steer; the held minimum
@@ -210,29 +222,57 @@ variable-rate beeping.
 It is genuinely useful for calibration feedback and walk-up use. **The LED bar is the
 primary driving signal.**
 
-## Power
+## Power — revised 2026-08-19
 
-- USB power bank via USB-A-to-C. Active draw ~105 mA (ESP32 with WiFi off ~45 mA,
-  OLED ~15 mA, HC-SR04 ~15 mA, LED bar ~31 mA at full).
-- Power-bank auto-shutoff (typically below ~50 mA) is **not** a risk here, because the
-  device is only powered while actively sensing. This is a direct benefit of the
-  on-demand usage model.
-- ~60 hours of active use from a 10,000 mAh bank (bank capacity is rated at 3.7 V cell
-  voltage; usable energy at 5 V is roughly 65% of the label). At ~2 minutes per park,
-  recharging is a few-times-a-year event.
-- Off = unplug. No deep sleep in v1: it would drop draw below the bank's cutoff, killing
-  power entirely and making wake impossible without a replug.
-- The 9 V battery in the kit is rejected: the DevKit's linear regulator dissipates
-  ~0.46 W as heat and yields roughly 5 hours.
+**The car's USB port, or a 12 V USB adapter.** The device is in the vehicle, so it
+powers on with the car and off with it.
 
-## Mounting
+This deletes the entire power problem from the original design: no power bank, no
+bank auto-shutoff concern, no 9 V regulator heat, no runtime budget, no deep-sleep
+question. Draw is ~105 mA, trivial for any car USB port.
 
-Garage entrance wall, on the side the car passes first, at the height of the widest point
-of the car's flank (door crease or mirror height). Sensor aimed perpendicular to the car's
-path — the ~30° beam cone will pick up the floor or ceiling if aimed off-axis.
+The USB power bank remains a fine fallback for bench work at a desk.
 
-Command strips (Velcro type) so it can be repositioned. Enclosure: any small box with
-holes for the two transducer barrels, the LED bar, and the OLED.
+## Mounting — car-mounted (revised 2026-08-19)
+
+**The device rides in the car, not on the garage wall.** It rests on the driver's
+door sill or armrest with the window lowered a few inches, sensor pointing straight
+out the left side. It must not be held while driving — resting it keeps hands on the
+wheel and gives a steadier reading.
+
+Aim it **horizontal and perpendicular** to the car. The beam is a ~30 degree cone, so
+a downward tilt catches the road surface.
+
+### Why this beats the original wall mount
+
+- **The OLED and buzzer become useful.** At garage-wall range a 0.96" screen is
+  unreadable and a kit buzzer is marginal through glass. Inside the cabin both work.
+- **Calibration becomes permanent.** The sensor is fixed relative to the car, so the
+  offset never changes. The wall version needed the identical mounting position every
+  single time or the saved reference was meaningless.
+- **It travels.** Garage, parking lots, parallel parking — the original goal.
+- **No mounting ritual.** Nothing to stick up and take down each trip.
+
+### The hard constraint: glass
+
+**Ultrasonic cannot see through a window.** Sound reflects off glass almost
+completely; a closed window returns a constant ~2 cm reading regardless of what is
+outside. The window must be down far enough for the sensor to have clear air.
+
+### The limitation: front corner
+
+This measures clearance **at the sensor's position**, roughly alongside the driver.
+When the front corner swings wide on a turn-in it is closer to the wall than the door
+is at that instant, and this will not see it. Mounting as far forward as practical
+reduces the gap but does not close it. If front-corner scrapes prove to be the real
+failure mode, the wall-mounted geometry catches them better.
+
+### What the saved reference means now
+
+The sensor sits near the door plane; the mirror protrudes roughly 6-8 inches further.
+So a 10 inch reading means about 2 inches of mirror clearance. None of that needs
+measuring — park with the mirror exactly as close as is acceptable and long-press.
+The offset is captured permanently.
 
 ## Testing
 
