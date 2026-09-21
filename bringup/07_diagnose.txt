@@ -1,0 +1,72 @@
+// DIAGNOSTIC - finds out what is actually connected.
+//
+// Reports two things:
+//   1. An I2C scan, so we know whether the OLED is present and at what address.
+//   2. The raw state of the ECHO pin, so we can tell "sensor never fired" apart
+//      from "ECHO wired wrong".
+//
+// Serial Monitor at 115200.
+
+#include <Wire.h>
+
+#define PIN_TRIG 17     // ESP32 pin printed TX2 (not a strapping pin)
+#define PIN_ECHO 18     // ESP32 pin printed D18
+
+void setup() {
+  Serial.begin(115200);
+  delay(400);
+  Serial.println();
+  Serial.println("=== DIAGNOSTIC ===");
+
+  pinMode(PIN_TRIG, OUTPUT);
+  pinMode(PIN_ECHO, INPUT);
+  digitalWrite(PIN_TRIG, LOW);
+
+  Wire.begin();
+  Serial.println("I2C scan (OLED should show up at 0x3C or 0x3D):");
+  int found = 0;
+  for (uint8_t addr = 1; addr < 127; addr++) {
+    Wire.beginTransmission(addr);
+    if (Wire.endTransmission() == 0) {
+      Serial.print("   device at 0x");
+      Serial.println(addr, HEX);
+      found++;
+    }
+  }
+  if (found == 0) {
+    Serial.println("   NOTHING FOUND - OLED unpowered, or SDA/SCL not connected");
+  }
+  Serial.println();
+  Serial.println("Now pulsing TRIG every 500ms:");
+}
+
+void loop() {
+  int idle = digitalRead(PIN_ECHO);   // ECHO state before we fire
+
+  digitalWrite(PIN_TRIG, LOW);
+  delayMicroseconds(3);
+  digitalWrite(PIN_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(PIN_TRIG, LOW);
+
+  unsigned long dur = pulseIn(PIN_ECHO, HIGH, 30000);
+
+  Serial.print("echo idle=");
+  Serial.print(idle);
+  Serial.print("  pulse=");
+  Serial.print(dur);
+  Serial.print("us");
+
+  if (dur == 0 && idle == 1) {
+    Serial.print("   >> ECHO STUCK HIGH - divider or ECHO wiring wrong");
+  } else if (dur == 0) {
+    Serial.print("   >> no echo - sensor unpowered, or TRIG not reaching it");
+  } else {
+    Serial.print("   = ");
+    Serial.print((dur * 0.0135205f) / 2.0f, 1);
+    Serial.print(" in");
+  }
+  Serial.println();
+
+  delay(500);
+}
