@@ -3,9 +3,10 @@
 An ESP32 ultrasonic rangefinder that warns you before you scrape your car.
 
 Built from a starter kit to solve a specific problem: a Lexus NX whose factory
-parking sensors alarm constantly while there is still plenty of room — and which
+parking sensors alarm constantly while there is still plenty of room, and which
 had already been scratched twice on the sides, where those sensors do not help.
 
+Also included an image when the car is not near any obstacles:
 ![Gengar on the OLED](garage_sensor/gengar_preview.png)
 
 ## What it does
